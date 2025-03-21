@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Labyrinth Game
+  description: |
+    **Abgabe für:** Manuel Rettig & Jan Olaf Rose
+    ---
+    ## A simple REST-based labyrinth game. 
+    ---
+    
+    **Spielbeschreibung:**
+    - Es ist ein Labyrinth-Spiel - nur ein Weg führt von A1 nach E5. Felder sind blockiert, wenn sie nicht vom Spieler begangen werden können.
+    
+    ---
+    **Spielregeln:**
+    - Der Spieler startet Spiel mit Benutzname und Spielfeldgröße **(Standard: 5x5)**
+    - Der Spieler Beginnt auf der vom Server vorgegebenen Startposition **(Standard: A1)**
+    - Ziel ist das vom Server vorgegebene Zielfeld **(Standard: E5)**
+    - Der Spieler kann sich in vier Richtungen bewegen: links, rechts, oben, unten.
+    - Bewegung erfolgt immer nur um ein Feld.
+    - Falls sich der Spieler außerhalb des Spielfelds bewegt, endet das Spiel mit dem Status `gameOver`. 
+      - Das Spiel ist dann vorbei und kann nicht wieder von vorne begonnen werden.
+    - Falls der Spieler das Zielfeld E5 erreicht, endet das Spiel mit dem Status `gameWon`.
+    - Falls der Spieler gegen ein blockiertes Feld läuft, bleibt er auf seiner Position und erhält `blocked` als Rückmeldung beim Zug.
+    ---
+  version: 1.0.0
+paths:
+  /game:
+    post:
+      tags:
+        - game
+      summary: Create new game instance
+      description: Create a new game instance with given size and username.  
+      operationId: createGame
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: 
+                - username
+              properties:
+                size:
+                  type: integer
+                  example: 5
+                  default: 5
+                  description: "Game size. Default: 5x5"
+                username:
+                  type: string
+                  example: Mario
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/game'
+              example: 
+                id: 1
+                size: 5
+                username: Mario
+                startPosition: A1
+                endPosition: E5
+                gameStatus: running
+                currentPositionIndex: null
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+  /game/{id}:
+    get:
+      tags:
+        - game
+      summary: Get status of game instance
+      description: Get current status of a game instance by ID. Shows current position and game status.
+      operationId: getGameById
+      parameters:
+        - name: id
+          in: path
+          description: 'ID of the game to find'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/game'
+        '400':
+          description: Invalid game ID
+        '404':
+          description: Game not found
+        '500':
+          description: Internal Server Error
+    delete:
+      tags:
+        - game
+      summary: Delete game instance
+      description: Delete a game instance by ID. Game is now aborted and can not be started again.
+      operationId: deleteGame
+      parameters:
+        - name: id
+          in: path
+          description: The name that needs to be deleted
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': 
+          description: Deleted
+        '400':
+          description: Bad Request
+        '404':
+          description: Game not found
+        '500':
+          description: Internal Server Error
+  /game/{id}/position:
+    get:
+      tags:
+        - game
+      summary: Get position history
+      description: Show all historical positions wether they were successful, failed or invalid.
+      operationId: getAllMovements
+      parameters:
+        - name: id
+          in: path
+          description: Game instance by ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/position'
+        '400':
+          description: Bad Request
+        '404':
+          description: Game not found
+        '500':
+          description: Internal Server Error
+    post:
+      tags:
+        - game
+      summary: Attempt to move to new position
+      description: Register a new move in the given direction. Response show wether change of position was executed successfully or not.
+      operationId: createMovement
+      parameters:
+        - name: id
+          in: path
+          description: ID of a game instance
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                direction:
+                  type: string
+                  enum: ['left', 'right', 'up', 'down']
+                  example: 'down'
+      responses:
+        '201':
+          description: Sucessfully created new movement entry. Check game status for futher context.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/position'
+              examples:
+                success:
+                  description: Sucessfully moved to new given position.
+                blocked:
+                  description: Movement was rejected (e.g. hit a wall). No change of position.
+                  value:
+                    index: 1
+                    direction: right
+                    status: blocked
+                    position: A1
+                invalid:
+                  description: Movement was invalid (e.g. game over or won). No change of position.
+                  value:
+                    index: 1
+                    status: invalid
+                    direction: left
+                    position: A1
+        '400':
+          description: Bad Request
+        '404':
+          description: Game not found
+        '409':
+          description: Game over or finished
+        '410':
+          description: Game was deleted
+        '500':
+          description: Internal Server Error
+  /game/{id}/position/{index}:
+    get:
+      tags:
+        - game
+      summary: Get details of position entry
+      description: Shows details about a specific position entry by index. Shows requested direction, status and new (or old) position.
+      parameters:
+        - name: id
+          in: path
+          description: ID of a game instance
+          required: true
+          schema:
+            type: string
+        - name: index
+          in: path
+          description: Index of a movement
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/position'
+        '400':
+          description: Bad Request
+        '404':
+          description: Game or movement not found
+        '500':
+          description: Internal Server Error
+components:
+  schemas:
+    game:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        size:
+          type: integer
+          example: 5
+          default: 5
+          description: "Game size. Default: 5x5"
+        username:
+          type: string
+          example: Mario
+        startPosition:
+          type: string
+          example: A1
+          default: A1
+          description: "Start position. Default: A1"
+        endPosition: 
+          type: string
+          example: E5
+          description: "End position. Default: E5"
+        gameStatus:
+          type: string
+          enum: ['running', 'gameWon', 'gameOver', 'aborted']
+          description: Status of the game instance
+          example: running
+        currentPositionIndex:
+          type: integer
+          example: 1
+    position:
+      type: object
+      properties:
+        index:
+          type: integer
+          example: 1
+        direction:
+          type: string
+          enum: ['left', 'right', 'up', 'down']
+          example: 'down'
+        status:
+          type: string
+          enum: ['success', 'blocked', 'invalid']
+          description: Status of the movement request
+          example: 'success'
+        position: 
+          type: string
+          description: Current position of the player
+          example: B1
