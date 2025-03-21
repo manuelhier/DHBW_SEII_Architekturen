@@ -1,0 +1,51 @@
+title Labyrinth Game
+
+#Alice->Bob:Click and drag to create a request or\ntype it in the source area to the left
+#Alice<--Bob:drag to move
+#note over Bob,Double click to edit text:Click Help menu for **instructions** and **examples**
+#Bob->(3)Double click to edit text:non-instantaneous message
+
+participant client
+participant server
+
+
+client->server:new Game(username: String, size: String)
+
+server->server: createGame()
+
+server-->>client:Game(id: String, size: String, username: String, position: String, gameStatus : String)
+
+server
+
+loop until moveStatus == invalid
+  client->server:new move(direction: "up" | "down" | "left" | "right")
+  server->server: checkMovement()
+
+  alt 201 - moveStatus: success
+  server-->>client:move(index: int, position : String, moveStatus : "success")
+  end
+
+  alt 201 - moveStatus: blocked
+  server-->>client:move(index: int, position : String, moveStatus : "failed")
+  end
+end
+
+alt 201 - moveStatus: invalid
+  server-->>client:move(index: int, position : String, moveStatus : "invalid")
+  
+  client->server: checkGameStatus()
+  
+  server-->>client: gameStatus == gameOver | gameWon
+end
+
+
+
+
+
+
+
+
+
+
+
+
