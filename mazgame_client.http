@@ -1,0 +1,18 @@
+### GET request to create new mazegame
+POST https://mazegame.rinderle.info/game
+Content-Type: application/json
+{
+"groupName" : "test1"
+}
+###
+
+### GET request to current game id
+GET mazegame.rinderle.info/game/9
+###
+
+### POST make a new move
+POST mazegame.rinderle.info/game/9/move
+Content-Type: application/json
+{
+  "direction" : "up"
+}
