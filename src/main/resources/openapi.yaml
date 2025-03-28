@@ -1,0 +1,175 @@
+openapi: 3.0.0
+info:
+  title: Maze Game API
+  description: A simple single-player maze game.
+  version: 1.0.0
+
+servers:
+  - url: https://mazegame.rinderle.info
+
+paths:
+  /game:
+    post:
+      summary: Start a new game
+      description: Creates a new game instance and returns the initial player position.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameInput'
+      responses:
+        '201':
+          description: Game started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+  /game/{gameId}:
+    get:
+      summary: Get game status
+      description: Retrieves the current game status.
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Game status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '404':
+          description: Game not found
+
+  /game/{gameId}/move:
+    post:
+      summary: Move in the maze
+      description: Move the player in the given direction.
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveInput'
+      responses:
+        '200':
+          description: Move result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Move'
+    get:
+      summary: Get all moves
+      description: Retrieves the history of moves the player has made in the game.
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: List of all moves made by the player
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Move'
+        '404':
+          description: Game not found
+
+  /game/{gameId}/move/{moveId}:
+    get:
+      summary: Get move
+      description: Retrieves the move.
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: number
+        - name: moveId
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Game status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Move'
+        '404':
+          description: Move not found
+
+components:
+  schemas:
+    Game:
+      type: object
+      properties:
+        gameId:
+          type: number
+        groupName:
+          type: string
+        position:
+          $ref: "#/components/schemas/Position"
+        status:
+          $ref: "#/components/schemas/GameStatus"
+
+    GameInput:
+      type: object
+      properties:
+        groupName:
+          type: string
+
+    MoveInput:
+      type: object
+      properties:
+        direction:
+          $ref: "#/components/schemas/Direction"
+
+    Move:
+      type: object
+      properties:
+        moveId:
+          type: number
+        direction:
+          $ref: "#/components/schemas/Direction"
+        positionAfterMove:
+          $ref: "#/components/schemas/Position"
+        moveStatus:
+          $ref: "#/components/schemas/MoveStatus"
+
+    Position:
+      type: object
+      properties:
+        positionX:
+          type: number
+          example: 1
+        positionY:
+          type: number
+          example: 1
+
+    GameStatus:
+      type: string
+      enum: [ ongoing, failed, success ]
+
+    MoveStatus:
+      type: string
+      enum: [ moved, blocked, failed ]
+
+    Direction:
+      type: string
+      enum: [ left, up, right, down ]
