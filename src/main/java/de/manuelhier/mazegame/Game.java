@@ -4,7 +4,7 @@ import org.openapitools.client.api.DefaultApi;
 import org.openapitools.client.model.*;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.*;
 
 public class Game {
 
@@ -17,11 +17,19 @@ public class Game {
         return GameApi.gamePost(gameInput);
     }
 
+    private static final int GRID_MIN = 1;
+    private static final int GRID_MAX = 5;
+
     GameDto game;
     int gameId;
     int positionX;
     int positionY;
     GameStatusDto status;
+
+    record Position(int x, int y) {
+    }
+
+    Set<Position> visitedIntersections = new HashSet<>();
 
     public Game() {
         this.game = createNewGame();
@@ -39,7 +47,6 @@ public class Game {
             this.game = null;
             System.err.println("Error loading game with id=" + gameId + ". Reason: " + e.getMessage());
         }
-
     }
 
     public void updateGameState() {
@@ -84,16 +91,9 @@ public class Game {
         System.out.println("Movement not allowed. Game failed or succeeded.");
         return false;
     }
+    
 
-    public boolean move(DirectionDto direction) {
-        if (step(direction)) {
-            return move(direction);
-        } else {
-            return false;
-        }
-    }
-
-    private boolean moveIsNotAllowed(DirectionDto direction) {
+    public boolean moveIsNotAllowed(DirectionDto direction) {
         PositionDto currentPosition = game.getPosition();
         assert currentPosition != null;
 
@@ -101,25 +101,23 @@ public class Game {
         int y = positionY;
 
         switch (direction) {
-            case UP: y++; break;
-            case DOWN: y--; break;
-            case LEFT: x--; break;
-            case RIGHT: x++; break;
+            case UP -> y++;
+            case DOWN -> y--;
+            case LEFT -> x--;
+            case RIGHT -> x++;
+        }
+
+        Position newPosition = new Position(x, y);
+        if (visitedIntersections.contains(newPosition)) {
+            System.out.println("HIER WAR ICH SCHON MAL");
+            return true;
         }
 
         // Test if position is out of bounds
-        return ( x < 1 || x > 5 || y < 1 || y > 5 );
+        return (x < GRID_MIN || x > GRID_MAX || y < GRID_MIN || y > GRID_MAX);
     }
 
-    public ArrayList<DirectionDto> allowedDirections () {
-        ArrayList<DirectionDto> allowedDirections = new ArrayList<>();
-        for (DirectionDto direction : DirectionDto.values()) {
-            if (!moveIsNotAllowed(direction)) {
-                allowedDirections.add(direction);
-            }
-        }
-        return allowedDirections;
-    }
+
 
     @Override
     public String toString() {
