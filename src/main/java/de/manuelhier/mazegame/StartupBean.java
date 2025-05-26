@@ -9,10 +9,20 @@ public class StartupBean {
     @PostConstruct
     public void init() {
 
-        Game game = new Game(542);
-        GameSolver gameSolver = new GameSolver(game);
+        int counter = 1;
 
-        gameSolver.solve();
+        while(true) {
+            Game game = new Game(counter);
+
+            if (game.game != null) {
+                GameSolver gameSolver = new GameSolver(game);
+                gameSolver.solve();
+                counter++;
+            } else {
+                break;
+            }
+
+        }
 
     }
 

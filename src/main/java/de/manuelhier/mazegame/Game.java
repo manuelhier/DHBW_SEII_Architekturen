@@ -8,6 +8,9 @@ import java.util.*;
 
 public class Game {
 
+    private static final int GRID_MIN = 1;
+    private static final int GRID_MAX = 5;
+
     static DefaultApi GameApi = new DefaultApi();
     static String groupName = "TestGroupAlpha";
 
@@ -17,17 +20,14 @@ public class Game {
         return GameApi.gamePost(gameInput);
     }
 
-    private static final int GRID_MIN = 1;
-    private static final int GRID_MAX = 5;
+    protected GameDto game;
+    private GameStatusDto status;
 
-    GameDto game;
-    int gameId;
-    int positionX;
-    int positionY;
-    GameStatusDto status;
+    protected int gameId;
+    protected int positionX;
+    protected int positionY;
 
-    record Position(int x, int y) {
-    }
+    protected record Position(int x, int y) { }
 
     Set<Position> visitedIntersections = new HashSet<>();
 
@@ -50,25 +50,29 @@ public class Game {
     }
 
     public void updateGameState() {
+        // Get & update current game state
         this.game = GameApi.gameGameIdGet(BigDecimal.valueOf(this.gameId));
+
+        // Asserts needed to suppress warnings!
         assert game.getPosition() != null;
         assert game.getPosition().getPositionX() != null;
-        this.positionX = game.getPosition().getPositionX().intValue();
         assert game.getPosition().getPositionY() != null;
+
+        // Update Position & Status
+        this.positionX = game.getPosition().getPositionX().intValue();
         this.positionY = game.getPosition().getPositionY().intValue();
         this.status = game.getStatus();
     }
 
-    public void printCurrentPosition() {
-        PositionDto currentPosition = game.getPosition();
-        assert currentPosition != null;
-        System.out.print("X:" + currentPosition.getPositionX() + " Y:" + currentPosition.getPositionY() + " ");
-    }
-
     public boolean step(DirectionDto direction) {
         if (game != null && status == GameStatusDto.ONGOING) {
-            printCurrentPosition();
 
+            // Print current position
+            PositionDto currentPosition = game.getPosition();
+            assert currentPosition != null;
+            System.out.print("X:" + currentPosition.getPositionX() + " Y:" + currentPosition.getPositionY() + " ");
+
+            // Print direction to move
             MoveInputDto moveInputDto = new MoveInputDto().direction(direction);
             System.out.print(direction.toString().toUpperCase() + " ");
 
@@ -91,15 +95,14 @@ public class Game {
         System.out.println("Movement not allowed. Game failed or succeeded.");
         return false;
     }
-    
 
     public boolean moveIsNotAllowed(DirectionDto direction) {
-        PositionDto currentPosition = game.getPosition();
-        assert currentPosition != null;
 
+        // Save current position
         int x = positionX;
         int y = positionY;
 
+        // Simulate new position based on move direction
         switch (direction) {
             case UP -> y++;
             case DOWN -> y--;
@@ -113,11 +116,9 @@ public class Game {
             return true;
         }
 
-        // Test if position is out of bounds
+        // Check if simulated position is out of bounds
         return (x < GRID_MIN || x > GRID_MAX || y < GRID_MIN || y > GRID_MAX);
     }
-
-
 
     @Override
     public String toString() {
