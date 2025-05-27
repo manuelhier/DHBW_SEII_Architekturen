@@ -8,22 +8,43 @@ public class StartupBean {
 
     @PostConstruct
     public void init() {
+        // Instant Solution:
+        // game.move(DirectionDto.UP);
+        // game.move(DirectionDto.RIGHT);
+        // game.move(DirectionDto.DOWN);
+        // game.move(DirectionDto.RIGHT);
+        // game.move(DirectionDto.UP);
 
-        int counter = 1;
+        Game game = new Game();
 
-        while(true) {
-            Game game = new Game(counter);
+        GameSolver gameSolver = new GameSolver(game);
 
-            if (game.game != null) {
-                GameSolver gameSolver = new GameSolver(game);
-                gameSolver.solve();
-                counter++;
-            } else {
-                break;
-            }
+        gameSolver.solve();
 
-        }
+        System.out.println(game);
 
+//        int counter = 1;
+//
+//        while(true) {
+//            Game game = new Game(counter++);
+//            if (game.game != null) {
+//                if (game.status != GameStatusDto.ONGOING) {
+//                    System.out.println("[ GameId: " + counter + " ] SKIP. Game already over: " + game.status);
+//                    continue;
+//                }
+//
+//                GameSolver gameSolver = new GameSolver(game);
+//
+//                try {
+//                    gameSolver.solve();
+//                    System.out.println("[ GameId: " + counter + " ] Game solved: " + game.status);
+//                } catch (Exception e) {
+//                    System.err.println("[ GameId: " + counter + " ] Error. " + e.getMessage());
+//                    break;
+//                }
+//            } else {
+//                break;
+//            }
+//        }
     }
-
 }

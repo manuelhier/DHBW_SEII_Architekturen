@@ -1,63 +1,59 @@
 package de.manuelhier.mazegame;
 
 import org.openapitools.client.model.DirectionDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class GameSolver {
 
+    private static final Boolean DEBUG_MODE = true;
+    private static final Logger LOGGER = LoggerFactory.getLogger(GameSolver.class);
+
     Game game;
+
+
 
     public GameSolver(Game game) {
         this.game = game;
     }
 
     public void solve() {
-        // Instant Solution:
-        // game.move(DirectionDto.UP);
-        // game.move(DirectionDto.RIGHT);
-        // game.move(DirectionDto.DOWN);
-        // game.move(DirectionDto.RIGHT);
-        // game.move(DirectionDto.UP);
-
         EnumSet<DirectionDto> directions = allowedDirections();
 
         while (!directions.isEmpty()) {
-            DirectionDto next = directions.iterator().next();
-            directions = moveToNextIntersection(next);
-            System.out.println(game);
-            System.out.println("Next: " + directions);
+            directions = moveToNextIntersection(directions);
+            print(game);
+            print("Next: " + directions);
         }
-        System.out.println("Maze solved.");
+        print("Maze solved.");
 
     }
 
-    private boolean move(DirectionDto direction) {
-        if (game.step(direction)) {
-            return move(direction);
-        } else {
-            return false;
-        }
-    }
+//    private boolean move(DirectionDto direction) {
+//        if (game.step(direction)) {
+//            return move(direction);
+//        } else {
+//            return false;
+//        }
+//    }
 
-    private EnumSet<DirectionDto> moveToNextIntersection(DirectionDto direction) {
-        if (game.step(direction)) {
+    private EnumSet<DirectionDto> moveToNextIntersection(EnumSet<DirectionDto> directions) {
+        DirectionDto next = directions.iterator().next();
+
+        if (game.step(next) && !directions.isEmpty()) {
             EnumSet<DirectionDto> allowedDirections = allowedDirections();
 
             // Remove Reverse Direction
-            switch (direction) {
-                case UP -> allowedDirections.remove(DirectionDto.DOWN);
-                case DOWN -> allowedDirections.remove(DirectionDto.UP);
-                case LEFT -> allowedDirections.remove(DirectionDto.RIGHT);
-                case RIGHT -> allowedDirections.remove(DirectionDto.LEFT);
-            }
+            allowedDirections.remove(getReverseDirection(next));
 
             if (allowedDirections.size() > 1) {
                 game.visitedIntersections.add(new Game.Position(game.positionX, game.positionY));
                 return allowedDirections;
             }
 
-            return moveToNextIntersection(allowedDirections.iterator().next());
+            return moveToNextIntersection(allowedDirections);
         }
         return EnumSet.noneOf(DirectionDto.class);
     }
@@ -68,27 +64,45 @@ public class GameSolver {
 
         while (iterator.hasNext()) {
             DirectionDto direction = iterator.next();
-            System.out.print("Checking " + direction.name() + ": ");
+
+            StringBuilder debugMessage = new StringBuilder();
+            debugMessage.append("Checking ").append(direction.name()).append(": ");
 
             if (game.moveIsNotAllowed(direction)) {
                 iterator.remove();
-                System.out.println("Not allowed.");
+                print(debugMessage.append("Not allowed."));
                 continue;
             }
 
             if (game.step(direction)) {
-                System.out.print("Reverting " + direction.name() + ": ");
-                switch (direction) {
-                    case RIGHT -> game.step(DirectionDto.LEFT);
-                    case LEFT -> game.step(DirectionDto.RIGHT);
-                    case DOWN -> game.step(DirectionDto.UP);
-                    case UP -> game.step(DirectionDto.DOWN);
-                }
+                print(debugMessage.append("Reverting move."));
+                game.step(getReverseDirection(direction));
             } else {
                 iterator.remove();
             }
         }
 
         return allowedDirections;
+    }
+
+    private DirectionDto getReverseDirection(DirectionDto direction) {
+        return switch (direction) {
+            case RIGHT -> DirectionDto.LEFT;
+            case LEFT -> DirectionDto.RIGHT;
+            case DOWN -> DirectionDto.UP;
+            case UP -> DirectionDto.DOWN;
+        };
+    }
+
+    public void print(Object obj) {
+        if (DEBUG_MODE) {
+            LOGGER.info(String.valueOf(obj));
+        }
+    }
+
+    public void print(String s) {
+        if (DEBUG_MODE) {
+            LOGGER.info(String.valueOf(s));
+        }
     }
 }

@@ -2,11 +2,16 @@ package de.manuelhier.mazegame;
 
 import org.openapitools.client.api.DefaultApi;
 import org.openapitools.client.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.*;
 
 public class Game {
+
+    private static final Boolean DEBUG_MODE = true;
+    private static final Logger LOGGER = LoggerFactory.getLogger(Game.class);
 
     private static final int GRID_MIN = 1;
     private static final int GRID_MAX = 5;
@@ -21,7 +26,7 @@ public class Game {
     }
 
     protected GameDto game;
-    private GameStatusDto status;
+    protected GameStatusDto status;
 
     protected int gameId;
     protected int positionX;
@@ -42,10 +47,9 @@ public class Game {
         try {
             this.gameId = gameId;
             updateGameState();
-            System.out.println(game);
+            debug(game);
         } catch (Exception e) {
             this.game = null;
-            System.err.println("Error loading game with id=" + gameId + ". Reason: " + e.getMessage());
         }
     }
 
@@ -67,18 +71,21 @@ public class Game {
     public boolean step(DirectionDto direction) {
         if (game != null && status == GameStatusDto.ONGOING) {
 
+            StringBuilder debugMessage = new StringBuilder();
+
             // Print current position
             PositionDto currentPosition = game.getPosition();
             assert currentPosition != null;
-            System.out.print("X:" + currentPosition.getPositionX() + " Y:" + currentPosition.getPositionY() + " ");
+            debugMessage.append("X:").append(currentPosition.getPositionX()).append(" ");
+            debugMessage.append("Y:").append(currentPosition.getPositionY()).append(" ");
 
             // Print direction to move
             MoveInputDto moveInputDto = new MoveInputDto().direction(direction);
-            System.out.print(direction.toString().toUpperCase() + " ");
+            debugMessage.append(direction.toString().toUpperCase()).append(" ");
 
             // Abort if move leads to failed status
             if (moveIsNotAllowed(direction)) {
-                System.out.println("ABORT");
+                debug(debugMessage.append("NOT ALLOWED"));
                 return false;
             }
 
@@ -88,11 +95,11 @@ public class Game {
 
             // Print move status
             assert result.getMoveStatus() != null;
-            System.out.println(result.getMoveStatus().toString().toUpperCase());
+            debug(debugMessage.append(result.getMoveStatus().toString().toUpperCase()));
 
             return result.getMoveStatus() == MoveStatusDto.MOVED;
         }
-        System.out.println("Movement not allowed. Game failed or succeeded.");
+        debug("Movement not allowed. Game failed or succeeded.");
         return false;
     }
 
@@ -112,7 +119,7 @@ public class Game {
 
         Position newPosition = new Position(x, y);
         if (visitedIntersections.contains(newPosition)) {
-            System.out.println("HIER WAR ICH SCHON MAL");
+            debug("HIER WAR ICH SCHON MAL");
             return true;
         }
 
@@ -126,6 +133,18 @@ public class Game {
             return game.toString();
         } else {
             return null;
+        }
+    }
+
+    public void debug(Object obj) {
+        if (DEBUG_MODE) {
+            LOGGER.info(String.valueOf(obj));
+        }
+    }
+
+    public void debug(String s) {
+        if (DEBUG_MODE) {
+            LOGGER.info(String.valueOf(s));
         }
     }
 }
