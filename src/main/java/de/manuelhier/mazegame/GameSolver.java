@@ -13,6 +13,12 @@ public class GameSolver {
 
     Game game;
 
+    protected record Position(int x, int y) {
+    }
+
+    protected Set<Position> visitedPositions = new HashSet<>();
+    protected HashMap<Position, EnumSet<DirectionDto>> intersections = new HashMap<>();
+    protected Stack<DirectionDto> steps = new Stack<>();
 
 
     public GameSolver(Game game) {
@@ -20,70 +26,112 @@ public class GameSolver {
     }
 
     public void solve() {
-        EnumSet<DirectionDto> directions = allowedDirections();
+        EnumSet<DirectionDto> directions = getAllowedDirections();
 
         while (!directions.isEmpty()) {
             directions = moveToNextIntersection(directions);
-            print(game);
             print("Next: " + directions);
         }
-        print("Maze solved.");
 
+        if (game.isFinished()) {
+            print("Maze solved.");
+        }
+
+        print("Visited Intersections: " + intersections);
+        print("Steps since last intersection: " + steps);
     }
-
-//    private boolean move(DirectionDto direction) {
-//        if (game.step(direction)) {
-//            return move(direction);
-//        } else {
-//            return false;
-//        }
-//    }
 
     private EnumSet<DirectionDto> moveToNextIntersection(EnumSet<DirectionDto> directions) {
         DirectionDto next = directions.iterator().next();
 
-        if (game.step(next) && !directions.isEmpty()) {
-            EnumSet<DirectionDto> allowedDirections = allowedDirections();
+        Position nextPos = getNextPosition(game.posX, game.posY, next);
+        if (visitedPositions.contains(nextPos)) {
+            directions.remove(next);
+            if (!directions.isEmpty()) {
+                print("Find next intersection: " + nextPos);
+                return moveToNextIntersection(directions);
+            } else {
+                print("Cycle detected. No next intersection. Maze can not be solved.");
+                return EnumSet.noneOf(DirectionDto.class);
+            }
+        }
 
-            // Remove Reverse Direction
-            allowedDirections.remove(getReverseDirection(next));
+        if (game.step(next)) {
+            print(next + " -> " + "x: " + game.posX + ", y: " + game.posY);
+            visitedPositions.add(nextPos);
+            steps.push(next);
 
-            if (allowedDirections.size() > 1) {
-                game.visitedIntersections.add(new Game.Position(game.positionX, game.positionY));
-                return allowedDirections;
+            // Check if game is finished
+            if (game.isFinished()) {
+                return EnumSet.noneOf(DirectionDto.class);
             }
 
-            return moveToNextIntersection(allowedDirections);
+            directions = getAllowedDirections();
+            directions.remove(getReverseDirection(next));
+
+            // Detect Intersection
+            if (directions.size() > 1) {
+                Position pos = new Position(game.posX, game.posY);
+                intersections.putIfAbsent(pos, directions);
+                print("INTERSECTION : " + intersections.get(pos));
+                return directions;
+            }
+
+            // Detect Dead-end
+            if (directions.isEmpty()) {
+                print("DEAD-END : Going back to last intersection");
+                return tracebackToIntersection();
+            }
+            return moveToNextIntersection(directions);
         }
         return EnumSet.noneOf(DirectionDto.class);
     }
 
-    private EnumSet<DirectionDto> allowedDirections() {
-        EnumSet<DirectionDto> allowedDirections = EnumSet.allOf(DirectionDto.class);
-        Iterator<DirectionDto> iterator = allowedDirections.iterator();
+    private EnumSet<DirectionDto> tracebackToIntersection() {
+        DirectionDto next = getReverseDirection(steps.pop());
 
-        while (iterator.hasNext()) {
-            DirectionDto direction = iterator.next();
+        if (game.step(next)) {
+            print(next + " -> " + "x: " + game.posX + ", y: " + game.posY);
+            Position pos = new Position(game.posX, game.posY);
+            EnumSet<DirectionDto> intersection = intersections.get(pos);
 
-            StringBuilder debugMessage = new StringBuilder();
-            debugMessage.append("Checking ").append(direction.name()).append(": ");
+            // Detect intersection
+            if (intersection != null) {
+                print("Found intersection. Intersection: " + intersection);
+                intersection.remove(getReverseDirection(next));
+                return intersection;
+            }
+        }
+        return tracebackToIntersection();
+    }
 
-            if (game.moveIsNotAllowed(direction)) {
-                iterator.remove();
-                print(debugMessage.append("Not allowed."));
+    private EnumSet<DirectionDto> getAllowedDirections() {
+        EnumSet<DirectionDto> allowed = EnumSet.noneOf(DirectionDto.class);
+
+        for (DirectionDto direction : DirectionDto.values()) {
+            if ((game.posX == 4 && game.posY == 5 && direction == DirectionDto.RIGHT) ||
+                    (game.posX == 5 && game.posY == 4 && direction == DirectionDto.UP)) {
+                allowed.add(direction);
                 continue;
             }
 
             if (game.step(direction)) {
-                print(debugMessage.append("Reverting move."));
                 game.step(getReverseDirection(direction));
-            } else {
-                iterator.remove();
+                allowed.add(direction);
             }
         }
-
-        return allowedDirections;
+        return allowed;
     }
+
+    private Position getNextPosition(int x, int y, DirectionDto direction) {
+        return switch (direction) {
+            case UP -> new Position(x, y + 1);
+            case DOWN -> new Position(x, y - 1);
+            case LEFT -> new Position(x - 1, y);
+            case RIGHT -> new Position(x + 1, y);
+        };
+    }
+
 
     private DirectionDto getReverseDirection(DirectionDto direction) {
         return switch (direction) {
@@ -94,13 +142,13 @@ public class GameSolver {
         };
     }
 
-    public void print(Object obj) {
+    private void print(Object obj) {
         if (DEBUG_MODE) {
             LOGGER.info(String.valueOf(obj));
         }
     }
 
-    public void print(String s) {
+    private void print(String s) {
         if (DEBUG_MODE) {
             LOGGER.info(String.valueOf(s));
         }
