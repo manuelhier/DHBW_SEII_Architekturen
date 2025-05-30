@@ -3,19 +3,17 @@ package de.manuelhier.mazegame;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-
 @Component
 public class StartupBean {
 
     @PostConstruct
     public void init() {
-//         Instant Solution:
-//         game.move(DirectionDto.UP);
-//         game.move(DirectionDto.RIGHT);
-//         game.move(DirectionDto.DOWN);
-//         game.move(DirectionDto.RIGHT);
-//         game.move(DirectionDto.UP);
+//        Instant Solution:
+//        game.move(DirectionDto.UP);
+//        game.move(DirectionDto.RIGHT);
+//        game.move(DirectionDto.DOWN);
+//        game.move(DirectionDto.RIGHT);
+//        game.move(DirectionDto.UP);
 
         Game game = new Game();
         System.out.println(game);
@@ -44,3 +42,4 @@ public class StartupBean {
 //            System.out.println(stats);
 //        }
     }
+}
