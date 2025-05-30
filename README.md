@@ -1,3 +1,5 @@
 # DHBW_SEII_Architekturen
 
-**Name:** Manuel Rettig
+**Gruppenmitglieder:**
++ Anas Haider Mehmood
++ Manuel Rettig
