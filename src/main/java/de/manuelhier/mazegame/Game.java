@@ -7,16 +7,19 @@ import java.math.BigDecimal;
 
 public class Game {
 
+    // MazeGame Grid Setting (Static)
     private static final int GRID_MIN = 1;
     private static final int GRID_MAX = 5;
 
     static DefaultApi GameApi = new DefaultApi();
-    static String groupName = "TestGroupAlpha";
+    static String groupName = "MEHMOOD_RETTIG";
 
+    // Game Data
     protected GameDto game;
     protected int gameId;
     protected int posX, posY;
 
+    // Constructor to create a new Game
     public Game() {
         GameInputDto gameInput = new GameInputDto();
         gameInput.setGroupName(groupName);
@@ -26,6 +29,7 @@ public class Game {
         updateGameState();
     }
 
+    // Constructor to load existing Game (given ID)
     public Game(int gameId) {
         try {
             this.gameId = gameId;
@@ -35,7 +39,7 @@ public class Game {
         }
     }
 
-    public void updateGameState() {
+    private void updateGameState() {
         // Get & update current game state
         this.game = GameApi.gameGameIdGet(BigDecimal.valueOf(gameId));
 
@@ -64,13 +68,13 @@ public class Game {
         return false;
     }
 
-    public boolean move(DirectionDto direction) {
-        if (this.step(direction)) {
-            return move(direction);
-        } else {
-            return false;
-        }
-    }
+    //    public boolean move(DirectionDto direction) {
+    //        if (this.step(direction)) {
+    //            return move(direction);
+    //        } else {
+    //            return false;
+    //        }
+    //    }
 
     private boolean stepIsAllowed(DirectionDto direction) {
         // Save current position
@@ -86,6 +90,7 @@ public class Game {
         }
 
         // Testing restrictions / boundaries
+        // if (x == 3 && y == 3) return false;
         // if (x == 5 && y == 4) return false;
         // if (x == 4 && y == 3) return false;
         // if (x == 4 && y == 1) return false;
@@ -94,6 +99,7 @@ public class Game {
         return (x >= GRID_MIN && x <= GRID_MAX && y >= GRID_MIN && y <= GRID_MAX);
     }
 
+    // Check if game is finished successfully
     public boolean isFinished() {
         return game.getStatus() == GameStatusDto.SUCCESS && posX == 5 && posY == 5;
     }
